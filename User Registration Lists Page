@@ -1,0 +1,96 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+import mysql.connector
+
+# Create the main window
+root = tk.Tk()
+root.title("User Registration Lists")
+root.geometry("1000x700")  # Set the window to full size
+
+def connect_db():
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            port=3306,
+            user='root',
+            password='hariharanj287@',
+            database='hariharan'
+        )
+        return connection
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Error", f"Error: {str(err)}")
+        return None
+
+# Function to search users by name
+def search_user():
+    name_search = search_entry.get().strip()
+    query = "SELECT name, age, gender, city, email, event_name FROM registrations r JOIN events e ON r.event_id = e.event_id"
+    
+    if name_search:
+        query += f" WHERE name LIKE '%{name_search}%'"
+    
+    try:
+        connection = connect_db()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            
+            # Clear the treeview
+            for item in treeview.get_children():
+                treeview.delete(item)
+
+            # Insert new search results
+            for row in results:
+                treeview.insert('', 'end', values=row)
+
+            cursor.close()
+            connection.close()
+
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Error: {str(err)}")
+
+# Create a frame for the title and search bar
+top_frame = tk.Frame(root, padx=10, pady=10)
+top_frame.pack(fill="x")
+
+# Title
+title_label = tk.Label(top_frame, text="User Registration Lists", font=("Helvetica", 20, "bold"))
+title_label.pack(side="left", padx=10)
+
+# Search bar
+search_label = tk.Label(top_frame, text="Search by Name:", font=("Helvetica", 14))
+search_label.pack(side="left", padx=10)
+
+search_entry = tk.Entry(top_frame, font=("Helvetica", 14), width=20)
+search_entry.pack(side="left", padx=10)
+
+search_button = tk.Button(top_frame, text="Search", font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", command=search_user)
+search_button.pack(side="left", padx=10)
+
+# Create a frame for the table
+table_frame = tk.Frame(root)
+table_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+# Treeview to display the list of users
+columns = ('Name', 'Age', 'Gender', 'City', 'Email', 'Event Name')
+treeview = ttk.Treeview(table_frame, columns=columns, show='headings', height=20)
+
+# Define column headings and their properties
+for col in columns:
+    treeview.heading(col, text=col)
+    treeview.column(col, anchor="center", width=150)
+
+treeview.pack(fill="both", expand=True)
+
+# Load all registrations at start
+def load_all_users():
+    search_user()
+
+# Configure the window to expand properly
+root.pack_propagate(False)
+root.update_idletasks()
+
+load_all_users()  # Load users into the table at the start
+root.mainloop()
