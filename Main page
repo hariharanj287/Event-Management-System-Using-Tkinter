@@ -1,0 +1,208 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+import mysql.connector
+from datetime import datetime
+
+# Establishing MySQL Connection
+def connect_db():
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            port=3306,
+            user='root',
+            password='hariharanj287@',
+            database='hariharan'  # Ensure this is your intended database
+        )
+        return connection
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Error", f"Error: {str(err)}")
+        return None
+
+# Create Tables if they don't exist
+def create_tables():
+    connection = connect_db()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS events (
+                event_id INT PRIMARY KEY,
+                event_name VARCHAR(255) NOT NULL,
+                event_date DATE NOT NULL,
+                event_location VARCHAR(255) NOT NULL
+            )
+            """)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS registrations (
+                registration_id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                age INT NOT NULL,
+                gender VARCHAR(10) NOT NULL,
+                city VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                event_id INT NOT NULL,
+                FOREIGN KEY (event_id) REFERENCES events(event_id)
+            )
+            """)
+            connection.commit()
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error", f"Error: {str(err)}")
+        finally:
+            cursor.close()
+            connection.close()
+
+# Function to add a new event to the database
+def add_event():
+    event_id = event_id_entry.get()
+    event_name = event_name_entry.get()
+    event_date = event_date_entry.get()
+    event_location = event_location_entry.get()
+
+    if event_id and event_name and event_date and event_location:
+        try:
+            formatted_date = datetime.strptime(event_date, "%d-%m-%Y").strftime("%Y-%m-%d")
+            connection = connect_db()
+            if connection:
+                cursor = connection.cursor()
+                cursor.execute("INSERT INTO events (event_id, event_name, event_date, event_location) VALUES (%s, %s, %s, %s)", 
+                               (event_id, event_name, formatted_date, event_location))
+                connection.commit()
+                messagebox.showinfo("Success", "Event added successfully!")
+                clear_event_fields()
+                load_events()
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error", f"Error: {str(err)}")
+        except ValueError:
+            messagebox.showwarning("Input Error", "Invalid date format. Use DD-MM-YYYY.")
+    else:
+        messagebox.showwarning("Input Error", "Please fill in all event fields.")
+
+# Function to delete an existing event from the database
+# Function to delete an existing event from the database
+def delete_event():
+    selected_event = event_combobox.get()
+    if selected_event:
+        event_id = selected_event.split(" - ")[0]  # Extract event_id from combobox
+        connection = connect_db()
+        if connection:
+            cursor = connection.cursor()
+            try:
+                # Delete registrations first
+                cursor.execute("DELETE FROM registrations WHERE event_id = %s", (event_id,))
+                connection.commit()
+
+                # Now delete the event
+                cursor.execute("DELETE FROM events WHERE event_id = %s", (event_id,))
+                connection.commit()
+                
+                messagebox.showinfo("Success", "Event and associated registrations deleted successfully!")
+                load_events()  # Refresh event list
+            except mysql.connector.Error as err:
+                messagebox.showerror("Error", f"Error: {str(err)}")
+            finally:
+                cursor.close()
+                connection.close()
+    else:
+        messagebox.showwarning("Input Error", "Please select an event to delete.")
+
+
+def tests():
+    import test3
+
+# Load Events into Combobox and Treeview
+def load_events():
+    event_combobox['values'] = []
+    for row in event_treeview.get_children():
+        event_treeview.delete(row)
+
+    connection = connect_db()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT event_id, event_name, event_date, event_location FROM events")
+            events = cursor.fetchall()
+            
+            # Update Combobox
+            event_combobox['values'] = [f"{event[0]} - {event[1]}" for event in events]
+
+            # Update Treeview
+            for event in events:
+                event_treeview.insert("", "end", values=(event[0], event[1], event[2], event[3]))
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error", f"Error: {str(err)}")
+        finally:
+            cursor.close()
+            connection.close()
+
+# Clear input fields
+def clear_event_fields():
+    event_id_entry.delete(0, tk.END)
+    event_name_entry.delete(0, tk.END)
+    event_date_entry.delete(0, tk.END)
+    event_location_entry.delete(0, tk.END)
+
+# UI Setup
+root = tk.Tk()
+root.title("Event Management System")
+root.geometry("1200x600")
+root.configure(bg="#EAEDED")
+
+# Frame for Event Details
+left_frame = tk.Frame(root, bg="#D5DBDB")
+left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+# Frame for Event List
+right_frame = tk.Frame(root, bg="#D5DBDB")
+right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+# Event Details (Left Side)
+tk.Label(left_frame, text="Event Admin Form", bg="#D5DBDB", font=("Arial", 18, "bold"), fg="#1F618D").grid(row=0, column=0, columnspan=2, pady=(0, 20), padx=10, sticky=tk.W)
+
+tk.Label(left_frame, text="Event ID:", bg="#D5DBDB", font=("Arial", 12)).grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+event_id_entry = tk.Entry(left_frame, font=("Arial", 12))
+event_id_entry.grid(row=1, column=1, padx=10, pady=5, sticky=tk.W)
+
+tk.Label(left_frame, text="Event Name:", bg="#D5DBDB", font=("Arial", 12)).grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
+event_name_entry = tk.Entry(left_frame, font=("Arial", 12))
+event_name_entry.grid(row=2, column=1, padx=10, pady=5, sticky=tk.W)
+
+tk.Label(left_frame, text="Event Date (DD-MM-YYYY):", bg="#D5DBDB", font=("Arial", 12)).grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
+event_date_entry = tk.Entry(left_frame, font=("Arial", 12))
+event_date_entry.grid(row=3, column=1, padx=10, pady=5, sticky=tk.W)
+
+tk.Label(left_frame, text="Event Location:", bg="#D5DBDB", font=("Arial", 12)).grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
+event_location_entry = tk.Entry(left_frame, font=("Arial", 12))
+event_location_entry.grid(row=4, column=1, padx=10, pady=5, sticky=tk.W)
+
+# Button to add an event
+tk.Button(left_frame, text="Add Event", command=add_event, bg="#1F618D", fg="#FFFFFF", font=("Arial", 12)).grid(row=5, column=0, columnspan=2, pady=10)
+
+# Button to delete an event
+tk.Button(left_frame, text="Delete Event", command=delete_event, bg="#1F618D", fg="#FFFFFF", font=("Arial", 12)).grid(row=6, column=0, columnspan=2, pady=10)
+
+# Combobox for selecting events
+tk.Label(left_frame, text="Select Event:", bg="#D5DBDB", font=("Arial", 12)).grid(row=7, column=0, padx=10, pady=5, sticky=tk.W)
+event_combobox = ttk.Combobox(left_frame, font=("Arial", 12))
+event_combobox.grid(row=7, column=1, padx=10, pady=5, sticky=tk.W)
+
+# Link to Event Lists
+event_lists_button = tk.Button(left_frame, text=" User Registration Lists", font=("Helvetica", 14, "bold"), bg="#4CAF50", fg="white", command=tests)
+event_lists_button.grid(row=12, column=0, columnspan=2, pady=(10, 15))
+
+# Event List (Right Side)
+tk.Label(right_frame, text="Event List", bg="#D5DBDB", font=("Arial", 16), fg="#1F618D").pack(pady=10)
+
+# Treeview to display events
+columns = ("ID", "Name", "Date", "Location")
+event_treeview = ttk.Treeview(right_frame, columns=columns, show="headings", height=20)
+event_treeview.pack(fill=tk.BOTH, expand=True)
+
+# Define headings
+for col in columns:
+    event_treeview.heading(col, text=col)
+
+# Load Events into the Combobox and Treeview on startup
+create_tables()  # Ensure tables exist before loading
+load_events()
+
+root.mainloop()
