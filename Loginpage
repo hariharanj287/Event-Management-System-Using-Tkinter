@@ -1,0 +1,241 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+import mysql.connector
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+
+# Create the main window
+root = tk.Tk()
+root.title("Event Entry Form")
+root.geometry("800x600")  # Adjusted window size for better visibility
+
+class ContentWindow(tk.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        self.title("Event Management System")
+        self.geometry("1200x600")
+        self.configure(bg="#EAEDED")
+        
+        # All your content window code goes here...
+        # Call create_tables() and load_events() methods as needed
+        
+        # On close, refresh events in the login window
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def on_close(self):
+        load_events_combobox()  # Refresh events in the login window
+        self.destroy()
+
+def yuva():
+    import test2  # Open the content window
+
+
+def connect_db():
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            port=3306,
+            user='root',
+            password='hariharanj287@',
+            database='hariharan'
+        )
+        return connection
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Error", f"Error: {str(err)}")
+        return None
+
+# Function to load events into combobox
+def load_events_combobox():
+    connection = connect_db()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT event_id, event_name FROM events")
+            events = cursor.fetchall()
+            # Update the combobox with event names and IDs
+            event_combobox['values'] = [f"{event[0]} - {event[1]}" for event in events]
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error", f"Error: {str(err)}")
+        finally:
+            cursor.close()
+            connection.close()
+            
+
+
+# Function to validate login
+def login():
+    # Simulated admin login credentials
+    username = "637969"
+    password = "809832"
+
+    if admin_id_entry.get() == username and admin_password_entry.get() == password:
+        load_events_combobox()  # Load events into the combobox after successful login
+        yuva()  # Move to the next page or function
+    else:
+        messagebox.showerror(title="Error", message="Invalid Username or Password")
+
+# Create a frame for the Admin Login
+admin_frame = tk.Frame(root, bg="#E0E0E0", padx=20, pady=20)
+admin_frame.grid(row=0, column=0, sticky="nsew")
+
+# Admin Login title
+admin_label = tk.Label(admin_frame, text="Admin Login", font=("Helvetica", 18, "bold"), bg="#E0E0E0")
+admin_label.grid(row=0, column=0, columnspan=2, pady=(0, 15))
+
+# Admin ID
+admin_id_label = tk.Label(admin_frame, text="Admin ID:", font=("Helvetica", 14), bg="#E0E0E0")
+admin_id_label.grid(row=1, column=0, sticky="w", pady=10)
+admin_id_entry = tk.Entry(admin_frame, font=("Helvetica", 14))
+admin_id_entry.grid(row=1, column=1, pady=10)
+
+# Admin Password
+admin_password_label = tk.Label(admin_frame, text="Password:", font=("Helvetica", 14), bg="#E0E0E0")
+admin_password_label.grid(row=2, column=0, sticky="w", pady=10)
+admin_password_entry = tk.Entry(admin_frame, show="*", font=("Helvetica", 14))
+admin_password_entry.grid(row=2, column=1, pady=10)
+
+# Login Button
+login_button = tk.Button(admin_frame, text="Login", font=("Helvetica", 14, "bold"), bg="#4CAF50", fg="white", command=login)
+login_button.grid(row=3, column=0, columnspan=2, pady=15)
+
+# Instructions for Admin
+admin_instructions = tk.Label(admin_frame, text="Admin Login Section - Only admins can log in here.", font=("Helvetica", 12), bg="#E0E0E0")
+admin_instructions.grid(row=4, column=0, columnspan=2, pady=(10, 0))
+
+
+
+
+# Create a frame for the User Entry Form
+user_frame = tk.Frame(root, bg="#F7F7F7", padx=20, pady=20)
+user_frame.grid(row=0, column=1, sticky="nsew")
+
+# User Entry Form title
+user_label = tk.Label(user_frame, text="User Entry Form", font=("Helvetica", 18, "bold"), bg="#F7F7F7")
+user_label.grid(row=0, column=0, columnspan=2, pady=(0, 15))
+
+# User Name
+name_label = tk.Label(user_frame, text="Name:", font=("Helvetica", 14), bg="#F7F7F7")
+name_label.grid(row=1, column=0, sticky="w", pady=10)
+name_entry = tk.Entry(user_frame, font=("Helvetica", 14))
+name_entry.grid(row=1, column=1, pady=10)
+
+# Age
+age_label = tk.Label(user_frame, text="Age:", font=("Helvetica", 14), bg="#F7F7F7")
+age_label.grid(row=2, column=0, sticky="w", pady=10)
+age_entry = tk.Entry(user_frame, font=("Helvetica", 14))
+age_entry.grid(row=2, column=1, pady=10)
+
+# Gender
+gender_label = tk.Label(user_frame, text="Gender:", font=("Helvetica", 14), bg="#F7F7F7")
+gender_label.grid(row=3, column=0, sticky="w", pady=10)
+gender_combobox = ttk.Combobox(user_frame, font=("Helvetica", 14), values=["Male", "Female", "Other"])
+gender_combobox.grid(row=3, column=1, pady=10)
+
+# City
+city_label = tk.Label(user_frame, text="City:", font=("Helvetica", 14), bg="#F7F7F7")
+city_label.grid(row=4, column=0, sticky="w", pady=10)
+city_entry = tk.Entry(user_frame, font=("Helvetica", 14))
+city_entry.grid(row=4, column=1, pady=10)
+
+# Email
+email_label = tk.Label(user_frame, text="Email:", font=("Helvetica", 14), bg="#F7F7F7")
+email_label.grid(row=5, column=0, sticky="w", pady=10)
+email_entry = tk.Entry(user_frame, font=("Helvetica", 14))
+email_entry.grid(row=5, column=1, pady=10)
+
+# Select Event Section (will be dynamically updated)
+event_label = tk.Label(user_frame, text="Select Event:", font=("Helvetica", 14), bg="#F7F7F7")
+event_label.grid(row=6, column=0, sticky="w", pady=10)
+event_combobox = ttk.Combobox(user_frame, font=("Helvetica", 14))  # Values will be loaded dynamically
+event_combobox.grid(row=6, column=1, pady=10)
+
+def submit_user_registration():
+    # Retrieve user inputs
+    name = name_entry.get()
+    age = age_entry.get()
+    gender = gender_combobox.get()
+    city = city_entry.get()
+    email = email_entry.get()
+    selected_event = event_combobox.get()
+
+    if name and age and gender and city and email and selected_event:
+        # Get event_id from the selected event (assuming event_combobox contains "event_id - event_name")
+        event_id = selected_event.split(" - ")[0]
+
+        try:
+            # Connect to the database
+            connection = connect_db()
+            if connection:
+                cursor = connection.cursor()
+
+                # Insert user details into the registrations table
+                cursor.execute("""INSERT INTO registrations (name, age, gender, city, email, event_id) VALUES (%s, %s, %s, %s, %s, %s)""", 
+                               (name, age, gender, city, email, event_id))
+
+                connection.commit()
+                messagebox.showinfo("Success", "Registration successful!")
+
+                # Send confirmation email
+                send_confirmation_email(name, email, selected_event)
+
+                # Clear the form fields after submission
+                clear_user_form()
+
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error", f"Error: {str(err)}")
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        messagebox.showwarning("Input Error", "Please fill in all fields.")
+
+def send_confirmation_email(name, email, event):
+    subject = "Event Registration Confirmation"
+    body = f"Dear {name},\n\nYou have successfully registered for the event: {event}.\n\nThank you for registering!\n\nBest regards,\nYour Event Team"
+
+    msg = MIMEMultipart()
+    msg['From'] = 'hariharanj287@gmail.com'
+    msg['To'] = email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        # Connect to the Gmail SMTP server
+        s = smtplib.SMTP('smtp.gmail.com', 587)
+        s.starttls()
+        s.login('hariharanj287@gmail.com', 'kkeo pkgr ywzq inim')  # Your password should be handled securely
+        s.send_message(msg)
+        s.quit()
+        print("Email sent successfully!")
+    except Exception as e:
+        messagebox.showerror("Email Error", f"Failed to send email: {str(e)}")
+
+
+# Function to clear form after submission
+def clear_user_form():
+    name_entry.delete(0, tk.END)
+    age_entry.delete(0, tk.END)
+    gender_combobox.set('')
+    city_entry.delete(0, tk.END)
+    email_entry.delete(0, tk.END)
+    event_combobox.set('')
+
+# Modify the Submit Button to call the new function
+submit_button = tk.Button(user_frame, text="Submit", font=("Helvetica", 14, "bold"), bg="#4CAF50", fg="white", command=submit_user_registration)
+submit_button.grid(row=7, column=0, columnspan=2, pady=15)
+
+# Instructions for Users
+user_instructions = tk.Label(user_frame, text="User Entry Form - Fill out the details above to register. Once submitted, you cannot submit again.", font=("Helvetica", 12), bg="#F7F7F7")
+user_instructions.grid(row=8, column=0, columnspan=2, pady=(10, 0))
+
+# Configure the grid to expand
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+root.grid_rowconfigure(0, weight=1)
+
+# Run the application
+load_events_combobox()  # Load events into the User Entry Form
+root.mainloop()
